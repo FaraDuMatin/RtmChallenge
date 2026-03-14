@@ -22,7 +22,7 @@ class MyPolicy(Policy):
         dist = math.hypot(dx, dy)
         
         # Maximum speed per step is 15.0m
-        speed = min(15.0, dist)
+        speed = min(50.0, dist)
         
         # PR-FIX: Build waypoints incrementally and cap at goal to prevent overshoot
         next_pos = current_pos

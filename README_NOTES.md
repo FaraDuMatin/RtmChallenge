@@ -521,3 +521,121 @@ Elle fait la correspondance exacte couleur/symbole -> objet simule. Utilise-la c
 - L interface te montre precisement quand la situation se degrade: augmentation des zones C/R, proximites NPC, decisions de cap non defensives.
 
 En pratique, utilise cette section image comme checklist de debug visuel avant chaque iteration de policy.
+
+## Explication interface view_playback.py 
+![alt text](view_playback.png)
+
+Cette capture montre le viewer interactif genere par view_playback.py pendant la lecture d un playback.
+
+Objectif de cette interface:
+
+- comprendre ce que fait la policy dans le temps,
+- relier une perte de score a une cause visuelle,
+- identifier rapidement les risques constraints, trafic, energie.
+
+### 1) Barre Frame en bas (slider)
+
+La barre en bas est le controle temporel principal.
+
+- Frame: index de la capture temporelle affichee.
+- Curseur: permet de se deplacer manuellement dans la simulation.
+- Nombre a droite (ici 909): frame courante.
+
+Comment l utiliser:
+
+- glisser pour sauter a un moment precis,
+- avancer/reculer frame par frame pour analyser une decision,
+- comparer juste avant et juste apres une penalite.
+
+Lecture utile:
+
+- frame faible = debut du run,
+- frame elevee = fin de run,
+- si la trajectoire se degrade apres une certaine frame, c est souvent lie a une evolution NOTAM ou a une convergence trafic.
+
+### 2) Panneau de variables en haut a gauche
+
+Le bloc texte resume l etat du drone au frame affiche:
+
+- time: tick simulation courant.
+- x, y: position actuelle du drone.
+- alt_layer: altitude discrete actuelle.
+- energy: energie restante.
+- NOTAM A/C/R: nombre de zones actives en Advisory, Controlled, Restricted.
+- active_npc: nombre de drones trafic actifs.
+
+Interpretation rapide de la capture fournie:
+
+- time=909: on est au milieu/avance du run.
+- x=11537.7, y=11244.1: le drone est dans le quart gauche-centre de la carte.
+- alt_layer=1: altitude basse a moyenne.
+- energy=329.1: batterie encore confortable mais en baisse continue.
+- NOTAM A/C/R=0/0/2: deux zones en phase Restricted sont actives, priorite a l evitement.
+- active_npc=8: trafic dense en continu.
+
+### 3) Legende et correspondance exacte des formes
+
+Chaque objet visible sur la carte correspond a un item de la legende en haut a droite.
+
+- Ownship Trail
+   - Forme visible: ligne bleue epaisse.
+   - Signification: historique du trajet deja parcouru par ton drone.
+- Ownship
+   - Forme visible: point rouge plein.
+   - Signification: position actuelle du drone au frame courant.
+- NPC Drones
+   - Forme visible: croix bleues.
+   - Signification: positions des drones trafic au frame courant.
+- Permanent Constraints
+   - Formes visibles: zones orange clair (rectangle, cercle, polygones selon scenario).
+   - Signification: zones permanentes du scenario public.
+- Emergency Sites / Goal
+   - Formes visibles: vert (petit carre/zone de secours et zone objectif).
+   - Signification: destination mission et zones d atterrissage urgence.
+- NOTAM Advisory
+   - Forme visible: contour jaune.
+   - Signification: phase d avertissement.
+- NOTAM Controlled
+   - Forme visible: contour orange soutenu.
+   - Signification: phase penalisante intermediaire.
+- NOTAM Restricted
+   - Forme visible: contour rouge.
+   - Signification: phase la plus critique avec penalite forte.
+
+### 4) Description des formes visibles dans ta capture
+
+Sur cette image precise, on observe:
+
+- un segment de trajectoire bleue partant de START vers la position courante (point rouge),
+- plusieurs croix bleues autour de la zone de vol (trafic actif),
+- une grande zone orange rectangulaire centrale (permanent constraint),
+- au moins un cercle orange en haut (autre contrainte permanente),
+- une zone rouge contournee a gauche-centre (NOTAM Restricted),
+- une zone rouge inclinee vers le haut-centre (autre region dynamique restrictive),
+- des zones vertes associees a objectif et secours (dont GOAL en haut a droite).
+
+Conclusion visuelle immediate:
+
+- le drone progresse vers la mission,
+- mais il evolue dans un contexte de trafic dense et de NOTAM restrictees actives,
+- toute logique ligne droite pure devient risquee a ce stade.
+
+### 5) Comment lire la carte pour debugger ta policy
+
+Procedure pratique:
+
+1. Place le curseur juste avant une chute de score.
+2. Lis les variables du panneau (A/C/R, energy, alt_layer, active_npc).
+3. Regarde si le point rouge ou son prolongement probable traverse une zone orange/rouge.
+4. Regarde les croix bleues proches et la distance laterale.
+5. Verifie si un changement d altitude aurait evite la zone ou le trafic.
+6. Corrige une seule regle dans la policy, puis rerun.
+
+### 6) Signaux d alerte a surveiller dans le viewer
+
+- A/C/R qui passe de 0/0/0 a 0/0/1 puis 0/0/2.
+- Point rouge proche d un contour rouge (restricted).
+- Croisillons NPC regroupes autour de la route directe.
+- Energie qui baisse alors que la route devient plus longue ou plus dangereuse.
+
+Si tu relies ces signaux a tes decisions de policy, tu peux iterer beaucoup plus vite et eviter les echecs catastrophiques.
