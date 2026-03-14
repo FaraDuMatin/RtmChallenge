@@ -77,6 +77,10 @@ At every simulation tick:
 3. You must return a `Plan` containing **exactly 5** `ActionStep` items.
 4. Simulator executes actions with commitment and kinematic limits, then scores.
 
+Altitude rule (strict):
+- Normal flight must stay within altitude layers **1 to 4**.
+- Altitude layer **0** is reserved for emergency landing flows only.
+
 If your output is invalid (wrong type, wrong step count, malformed action fields), the run can terminate with catastrophic failure.
 
 ---
@@ -131,6 +135,7 @@ Fields:
 
 Validation:
 - At least one of `target_position` or `target_alt_layer` must be set.
+- For normal flight logic, `target_alt_layer` should be in the range **1..4**.
 
 Execution behavior:
 - Horizontal motion is clamped by max horizontal speed.
@@ -152,7 +157,7 @@ ActionStep(
 
 ### `ActionType.EMERGENCY_LAND`
 - Holds horizontal position.
-- Descends toward altitude layer 0.
+- Descends toward altitude layer 0 (layer 0 is emergency-only).
 
 ---
 
